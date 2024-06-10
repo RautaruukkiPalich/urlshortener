@@ -1,0 +1,99 @@
+definitions:
+  apiserver.errorResponse:
+    properties:
+      code:
+        type: integer
+      error:
+        type: string
+    type: object
+  model.URL:
+    properties:
+      long:
+        type: string
+    type: object
+  model.URLs:
+    properties:
+      long:
+        type: string
+      short:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /{url}:
+    get:
+      consumes:
+      - application/json
+      description: get long url from short url
+      parameters:
+      - description: url
+        in: path
+        name: url
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.URLs'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apiserver.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/apiserver.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apiserver.errorResponse'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/apiserver.errorResponse'
+      summary: Get long url from short url
+      tags:
+      - urls
+  /shorten:
+    post:
+      consumes:
+      - application/json
+      description: push url, get short url
+      parameters:
+      - description: url from
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/model.URL'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.URLs'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apiserver.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/apiserver.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apiserver.errorResponse'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/apiserver.errorResponse'
+      summary: Push url, get short url
+      tags:
+      - urls
+swagger: "2.0"

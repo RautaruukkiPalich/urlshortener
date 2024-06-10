@@ -1,0 +1,68 @@
+version: '3.9'
+
+services:
+  clickhouse:
+    container_name: clickhouse8123
+    image: clickhouse/clickhouse-server:24.3.2.23-alpine
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    restart: always
+    volumes:
+      - clickhouse:/data/clickhouse
+
+  redis:
+    container_name: redis6381
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_PORT:-6381}:6379"
+    restart: always
+    networks:
+      - default
+
+  prometheus:
+    container_name: prometheus9090
+    image: prom/prometheus:latest
+    user: root
+    volumes:
+      - /apps/prometheus/configs/prometheus.yaml:/etc/prometheus/prometheus.yaml
+      - /data/prometheus:/prometheus
+    hostname: prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - 9090:9090
+    restart: unless-stopped
+    environment:
+      TZ: "Europe/Moscow"
+    networks:
+      - default
+    # http://host.docker.internal:9090
+
+  grafana:
+    container_name: grafana3000
+    image: grafana/grafana
+    user: root
+    depends_on:
+      - prometheus
+    ports:
+      - 3000:3000
+    volumes:
+      - ./grafana:/var/lib/grafana
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+    hostname: grafana
+    restart: unless-stopped
+    environment:
+      TZ: "Europe/Moscow"
+    networks:
+      - default
+
+
+volumes:
+    clickhouse:
+    redis:
+    prometeus:
+
+networks:
+  default:
+    driver: bridge

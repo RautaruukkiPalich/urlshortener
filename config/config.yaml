@@ -1,0 +1,15 @@
+env: "local"
+database: 
+  uri: "localhost:9000"
+  database: "default"
+  user: "default"
+  password: ""
+  max_execution_time: 60
+  dial_timeout: 30s
+cache: 
+  uri: "redis://localhost:6381"
+  exp: 1m
+server:
+  addr: "localhost:8080"
+  timeout: 5s
+migration_path: "./migrations"
