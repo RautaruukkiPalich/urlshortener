@@ -62,19 +62,10 @@ func (a *APIServer) vaidateUrl(url string) error {
 }
 
 
-// func (a *APIServer) redirect(w http.ResponseWriter, r *http.Request, url string) {
-// 	logger.LoggerFromContext(a.ctx).With(
-// 		slog.String("remote addr", r.RemoteAddr),
-// 		slog.String("from", r.RequestURI),
-// 		slog.String("to", url),
-// 	).Info("reditected")
-// 	// a.log.With(
-// 	// 	slog.String("remote addr", r.RemoteAddr),
-// 	// 	slog.String("from", r.RequestURI),
-// 	// 	slog.String("to", url),
-// 	// ).Info("reditected")
-// 	http.Redirect(w, r, url, http.StatusPermanentRedirect)
-// }
+func (a *APIServer) redirect(ctx context.Context, w http.ResponseWriter, r *http.Request, code int, urls *model.URLs) {
+	logger.LoggerFromContext(ctx).Info("reditected")
+	http.Redirect(w, r, urls.Long, http.StatusPermanentRedirect)
+}
 
 
 func (a *APIServer) GetShortURL(ctx context.Context, urls *model.URLs) (ok bool, err error){
@@ -85,7 +76,7 @@ func (a *APIServer) GetShortURL(ctx context.Context, urls *model.URLs) (ok bool,
 
 	if !ok && err == nil {
 		logger.LoggerFromContext(ctx).Debug("long url from short url not found")
-		return false, nil
+		return false, ErrNotFound
 	}
 	if err != nil {
 		logger.LoggerFromContext(ctx).Debug("error while get cached long url", slog.Any("error", err.Error()))

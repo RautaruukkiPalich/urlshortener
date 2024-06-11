@@ -114,6 +114,7 @@ func (a *APIServer) configureRouter() {
 	a.router.PathPrefix("/swagger/").HandlerFunc(httpSwagger.WrapHandler)
 
 	a.router.Handle("/shorten", a.PushURLHandler()).Methods(http.MethodPost)
+	a.router.Handle("/t/{any}", a.RedirectHandler()).Methods(http.MethodGet)
 	a.router.Handle("/{any}", a.GetShortURLHandler()).Methods(http.MethodGet)
 	// router.Handle("/{any}", a.RedirectShortUrl()).Methods("GET")
 }

@@ -37,10 +37,10 @@ func (a *APIServer) PushURLHandler() http.HandlerFunc {
 
 		ctx = logger.AddTrace(ctx, slog.Any("op", op))
 		ctx = logger.AddGroup(ctx, slog.Group(
-			"req",
-			slog.String("request uuid", uuid.New().String()),
+			"request",
+			slog.String("path", r.RequestURI),
 			slog.String("remote addr", r.RemoteAddr),
-			slog.String("request addr", r.RequestURI),
+			slog.String("uuid", uuid.New().String()),
 		))
 
 		var urls model.URLs
@@ -65,7 +65,9 @@ func (a *APIServer) PushURLHandler() http.HandlerFunc {
 
 		code, err := a.PushURL(ctx, &urls)
 		if err != nil{
+			logger.LoggerFromContext(ctx).Error("err push url", slog.String("err", err.Error()))
 			a.error(ctx, w, r, code, err)
+			return
 		} 
 
 		a.JSONrespond(ctx, w, r, code, urls)
@@ -94,17 +96,16 @@ func (a *APIServer) GetShortURLHandler() http.HandlerFunc {
 
 		const op = "internal.apiserver.GetShortURLHandler"
 		ctx := logger.AddTrace(r.Context(), slog.Any("op", op))
-
 		ctx = logger.AddGroup(ctx, slog.Group(
-			"req",
-			slog.String("request uuid", uuid.New().String()),
+			"request",
+			slog.String("path", r.RequestURI),
 			slog.String("remote addr", r.RemoteAddr),
-			slog.String("request addr", r.RequestURI),
+			slog.String("uuid", uuid.New().String()),
 		))
 
 		var urls model.URLs
 
-		short := strings.TrimLeft(r.RequestURI, "/")
+		short := strings.TrimPrefix(r.RequestURI, "/")
 		urls.Short = short
 
 		ok, err := a.GetShortURL(ctx, &urls)
@@ -123,34 +124,41 @@ func (a *APIServer) GetShortURLHandler() http.HandlerFunc {
 	}
 }
 
-// func (a *APIServer) RedirectShortUrl() http.HandlerFunc {
-// 	return func(w http.ResponseWriter, r *http.Request) {
-// 		const op = "internal.apiserver.RedirectShortUrl"
-// 		log := logger.LoggerFromContext(a.ctx).With(
-// 			slog.String("op", op),
-// 			slog.String("remote addr", r.RemoteAddr),
-// 			slog.String("request addr", r.RequestURI),
-// 		)
-// 		// log := a.log.With(
-// 		// 	slog.String("op", op),
-// 		// 	slog.String("remote addr", r.RemoteAddr),
-// 		// 	slog.String("request addr", r.RequestURI),
-// 		// )
+func (a *APIServer) RedirectHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var code int = http.StatusMovedPermanently
 
-// 		var urls model.URLs
+		start := time.Now()
+		defer func(){
+			observeRequest(time.Since(start), code)
+		}()
 
-// 		defer r.Body.Close()
+		const op = "internal.apiserver.RedirectHandler"
+		ctx := logger.AddTrace(r.Context(), slog.Any("op", op))
+		ctx = logger.AddGroup(ctx, slog.Group(
+			"request",
+			slog.String("path", r.RequestURI),
+			slog.String("remote addr", r.RemoteAddr),
+			slog.String("uuid", uuid.New().String()),
+		))
 
-// 		pattern := strings.TrimLeft(r.RequestURI, "/")
-// 		urls.Short = pattern
+		var urls model.URLs
 
-// 		ok, err := a.GetLongURL(a.ctx, &urls)
-// 		if err != nil || !ok {
-// 			log.Error("some error", slog.String("err", err.Error()))
-// 			a.error(w, r, errorResponse{Code: http.StatusBadRequest, Error: ErrInvalidURL.Error()})
-// 			return
-// 		}
+		short := strings.TrimPrefix(r.RequestURI, "/t/")
+		urls.Short = short
 
-// 		a.redirect(w, r, urls.Long)
-// 	}
-// }
+		ok, err := a.GetShortURL(ctx, &urls)
+		if err != nil {
+			code = http.StatusInternalServerError
+			a.error(ctx, w, r, code, err)
+			return
+		}
+		if !ok {
+			code = http.StatusNotFound
+			a.error(ctx, w, r, code, ErrNotFound)
+			return
+		}
+
+		a.redirect(ctx, w, r, code, &urls)
+	}
+}

@@ -24,6 +24,6 @@ swagger:
 	swag fmt
 
 bomb:
-	bombardier -c 200 -d 30s -l http://localhost:8080/dg4r-TMc
+	bombardier -c 1000 -d 30s -l http://localhost:8080/05JrT5_c
 
-	bombardier -c 1000 -d 30s http://localhost:8080/1
+	bombardier -c 1000 -d 30s http://localhost:8080/t/05JrT5_c

@@ -6,8 +6,9 @@ import (
 	"errors"
 	"log/slog"
 
-	logger "github.com/rautaruukkipalich/urlsh/pkg/log"
 	"github.com/rautaruukkipalich/urlsh/internal/model"
+	"github.com/rautaruukkipalich/urlsh/internal/store"
+	logger "github.com/rautaruukkipalich/urlsh/pkg/log"
 )
 
 // prepare?
@@ -88,7 +89,7 @@ func (db *DB) GetLongURL(ctx context.Context, urls *model.URLs) (bool, error) {
 
 	if err := row.Scan(&urls.Long); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return false, nil
+			return false, store.ErrNotFound
 		}
 		logger.LoggerFromContext(ctx).Error("err while scan row", slog.Any("error", err.Error()))
 		return false, err
