@@ -25,11 +25,10 @@ services:
     image: prom/prometheus:latest
     user: root
     volumes:
-      - /apps/prometheus/configs/prometheus.yaml:/etc/prometheus/prometheus.yaml
-      - /data/prometheus:/prometheus
+      - ./prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml
     hostname: prometheus
     command:
-      - --config.file=/etc/prometheus/prometheus.yml
+      - --config.file=/etc/prometheus/prometheus.yaml
     ports:
       - 9090:9090
     restart: unless-stopped
