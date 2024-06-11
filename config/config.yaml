@@ -1,4 +1,4 @@
-env: "prod"
+env: "local"
 database: 
   uri: "localhost:9000"
   database: "default"

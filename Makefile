@@ -7,14 +7,13 @@ rundocker:
 stopdocker:
 	docker-compose down
 
-
 test: testunit testintegration
 
 testunit: 
-	go test ./... 
+	go test ./... -v
 
 testintegration:
-	go test ./test/... 
+	go test ./test/... -v
 
 lint:
 	golangci-lint run ./...

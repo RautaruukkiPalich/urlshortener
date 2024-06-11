@@ -2,6 +2,7 @@ package apiserver
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -110,6 +111,12 @@ func (a *APIServer) GetShortURLHandler() http.HandlerFunc {
 
 		ok, err := a.GetShortURL(ctx, &urls)
 		if err != nil {
+			if errors.Is(err, ErrNotFound) {
+				code = http.StatusNotFound
+				a.error(ctx, w, r, code, err)
+				return
+			}
+
 			code = http.StatusInternalServerError
 			a.error(ctx, w, r, code, err)
 			return
@@ -149,9 +156,12 @@ func (a *APIServer) RedirectHandler() http.HandlerFunc {
 
 		ok, err := a.GetShortURL(ctx, &urls)
 		if err != nil {
-			code = http.StatusInternalServerError
-			a.error(ctx, w, r, code, err)
-			return
+			switch err {
+			case ErrInternalServerError:
+				code = http.StatusInternalServerError
+				a.error(ctx, w, r, code, err)
+				return
+			}			
 		}
 		if !ok {
 			code = http.StatusNotFound

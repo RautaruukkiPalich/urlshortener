@@ -131,3 +131,23 @@ func Test_GetShortUrls(t *testing.T) {
 	}
 
 }
+
+
+func Test_RedirectUrls(t *testing.T) {
+	ctx := context.Background()
+	srv := testServer(t, ctx)
+	fillTestDB(t, srv)
+
+	for _, tc := range URLsTestCases {
+		t.Run(tc.name, func(t *testing.T) {
+			rr := httptest.NewRecorder()
+
+			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/t/%s", tc.urls.Short), nil)
+			srv.RedirectHandler().ServeHTTP(rr, req)
+
+			assert.Equal(t, http.StatusPermanentRedirect, rr.Code)
+			assert.Equal(t, tc.urls.Long, rr.Header().Get("Location"))
+		})
+	}
+
+}

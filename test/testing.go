@@ -14,10 +14,15 @@ import (
 	mockcache "github.com/rautaruukkipalich/urlsh/internal/cache/mock"
 	"github.com/rautaruukkipalich/urlsh/internal/model"
 	"github.com/rautaruukkipalich/urlsh/internal/store/mock"
+	"github.com/rautaruukkipalich/urlsh/pkg/loggerloader"
+	logger "github.com/rautaruukkipalich/urlsh/pkg/log"
 )
 
 func testServer(t *testing.T, ctx context.Context) *apiserver.APIServer {
 	t.Helper()
+
+	log := loggerloader.MustRunLogger("prod")
+	logger.CreateGlobalLogger(log)
 
 	var (
 		cfg = &config.SRVConfig{
@@ -44,7 +49,6 @@ func testServer(t *testing.T, ctx context.Context) *apiserver.APIServer {
 func fillTestDB(t *testing.T, srv *apiserver.APIServer) {
 	for idx, tc := range URLsTestCases {
 		rr := httptest.NewRecorder()
-		tc.urls.Short = ""
 
 		var json_data bytes.Buffer
 		_ = json.NewEncoder(&json_data).Encode(tc.urls)
