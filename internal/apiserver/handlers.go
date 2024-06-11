@@ -1,11 +1,11 @@
 package apiserver
 
 import (
-	"database/sql"
 	"encoding/json"
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/rautaruukkipalich/urlsh/internal/model"
@@ -23,10 +23,16 @@ import (
 // @Success		500		{object}	errorResponse
 // @Success		default	{object}	errorResponse
 // @Router			/shorten [post]
-func (a *APIServer) PushLink() http.HandlerFunc {
+func (a *APIServer) PushURLHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		var code int = http.StatusOK
 
-		const op = "internal.apiserver.PushLink"
+		start := time.Now()
+		defer func(){
+			observeRequest(time.Since(start), code)
+		}()
+
+		const op = "internal.apiserver.PushURLHandler"
 		ctx := r.Context()
 
 		ctx = logger.AddTrace(ctx, slog.Any("op", op))
@@ -37,13 +43,14 @@ func (a *APIServer) PushLink() http.HandlerFunc {
 			slog.String("request addr", r.RequestURI),
 		))
 
-		defer r.Body.Close()
-
 		var urls model.URLs
+
+		defer r.Body.Close()
 
 		if err := json.NewDecoder(r.Body).Decode(&urls); err != nil {
 			logger.LoggerFromContext(ctx).Error("decode json error", slog.String("err", err.Error()))
-			a.error(ctx, w, r, ErrResp500)
+			code = http.StatusInternalServerError
+			a.error(ctx, w, r, code, ErrInternalServerError)
 			return
 		}
 
@@ -51,50 +58,17 @@ func (a *APIServer) PushLink() http.HandlerFunc {
 
 		if err := a.vaidateUrl(urls.Long); err != nil {
 			logger.LoggerFromContext(ctx).Error("invalid url", slog.String("err", err.Error()))
-			a.error(ctx, w, r, errorResponse{http.StatusBadRequest, ErrInvalidURL.Error()})
+			code = http.StatusBadRequest
+			a.error(ctx, w, r, code, err)
 			return
 		}
 
-		ok, err := a.GetShortURL(ctx, &urls)
-		if err != nil {
-			if err != sql.ErrNoRows {
-				a.error(ctx, w, r, ErrResp500)
-				return
-			}
-		}
+		code, err := a.PushURL(ctx, &urls)
+		if err != nil{
+			a.error(ctx, w, r, code, err)
+		} 
 
-		if ok {
-			ctx = logger.AddAttr(ctx, "shorturl", urls.Short)
-		}
-
-		if urls.Short == EmptyString {
-			for {
-				short := a.generateShortUrl()
-				urls.Short = short
-
-				ctx = logger.AddAttr(ctx, "shorturl", urls.Short)
-
-				ok, err := a.GetLongURL(ctx, &urls)
-				if err != nil {
-					logger.LoggerFromContext(ctx).Debug("err while get long url", slog.String("err", err.Error()))
-					a.error(ctx, w, r, ErrResp500)
-					return
-				}
-
-				if ok {
-					continue
-				}
-
-				if err := a.SetURLs(ctx, &urls); err != nil {
-					logger.LoggerFromContext(ctx).Debug("error while set urls error", slog.String("err", err.Error()))
-					continue
-				}
-				logger.LoggerFromContext(ctx).Debug("short url generated")
-				break
-			}
-		}
-
-		a.JSONrespond(ctx, w, r, http.StatusOK, urls)
+		a.JSONrespond(ctx, w, r, code, urls)
 	}
 }
 
@@ -109,10 +83,16 @@ func (a *APIServer) PushLink() http.HandlerFunc {
 // @Success		500		{object}	errorResponse
 // @Success		default	{object}	errorResponse
 // @Router			/{url} [get]
-func (a *APIServer) LinkFromShortUrl() http.HandlerFunc {
+func (a *APIServer) GetShortURLHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		var code int = http.StatusOK
 
-		const op = "internal.apiserver.LinkFromShortUrl"
+		start := time.Now()
+		defer func(){
+			observeRequest(time.Since(start), code)
+		}()
+
+		const op = "internal.apiserver.GetShortURLHandler"
 		ctx := logger.AddTrace(r.Context(), slog.Any("op", op))
 
 		ctx = logger.AddGroup(ctx, slog.Group(
@@ -127,13 +107,15 @@ func (a *APIServer) LinkFromShortUrl() http.HandlerFunc {
 		short := strings.TrimLeft(r.RequestURI, "/")
 		urls.Short = short
 
-		ok, err := a.GetLongURL(ctx, &urls)
-		if err != nil || !ok {
-			if err == nil {
-				err = ErrNotFound
-			} 
-			logger.LoggerFromContext(ctx).Debug("error while get cached long url", slog.Any("error", err.Error()))
-			a.error(ctx, w, r, errorResponse{Code: http.StatusBadRequest, Error: ErrInvalidURL.Error()})
+		ok, err := a.GetShortURL(ctx, &urls)
+		if err != nil {
+			code = http.StatusInternalServerError
+			a.error(ctx, w, r, code, err)
+			return
+		}
+		if !ok {
+			code = http.StatusNotFound
+			a.error(ctx, w, r, code, ErrNotFound)
 			return
 		}
 

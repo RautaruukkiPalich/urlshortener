@@ -1,4 +1,4 @@
-env: "local"
+env: "prod"
 database: 
   uri: "localhost:9000"
   database: "default"
@@ -12,4 +12,6 @@ cache:
 server:
   addr: "localhost:8080"
   timeout: 5s
-migration_path: "./migrations"
+metrics:
+  uri: "localhost:8082"
+

@@ -3,10 +3,11 @@ package config
 import "time"
 
 type Config struct {
-	LogEnv   string      `yaml:"env" required:"true"`
-	Server   SRVConfig   `yaml:"server" required:"true"`
-	Database DBConfig    `yaml:"database" required:"true"`
-	Cache    CacheConfig `yaml:"cache" required:"true"`
+	LogEnv   string        `yaml:"env" required:"true"`
+	Server   SRVConfig     `yaml:"server" required:"true"`
+	Database DBConfig      `yaml:"database" required:"true"`
+	Cache    CacheConfig   `yaml:"cache" required:"true"`
+	Metrics  MetricsConfig `yaml:"metrics" required:"true"`
 }
 
 type SRVConfig struct {
@@ -26,4 +27,8 @@ type DBConfig struct {
 type CacheConfig struct {
 	URI string        `yaml:"uri" required:"true"`
 	Exp time.Duration `yaml:"exp" required:"true"`
+}
+
+type MetricsConfig struct {
+	URI string `yaml:"uri" required:"true"`
 }

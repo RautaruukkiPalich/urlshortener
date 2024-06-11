@@ -9,6 +9,7 @@ import (
 
 	"github.com/rautaruukkipalich/urlsh/internal/apiserver"
 	rediscache "github.com/rautaruukkipalich/urlsh/internal/cache/redis"
+	"github.com/rautaruukkipalich/urlsh/internal/metrics"
 	"github.com/rautaruukkipalich/urlsh/internal/store/clickhouse"
 	"github.com/rautaruukkipalich/urlsh/pkg/configloader"
 	logger "github.com/rautaruukkipalich/urlsh/pkg/log"
@@ -51,6 +52,11 @@ func main() {
 	)
 
 	logger.LoggerFromContext(ctx).Info("starting server...")
+
+	//run metrics
+	go func(){
+		_ = metrics.Listen(cfg.Metrics.URI)
+	}()
 
 	//run server
 	go srv.MustRun(ctx)
