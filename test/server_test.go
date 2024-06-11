@@ -67,7 +67,7 @@ func Test_PushLink(t *testing.T) {
 			_ = json.NewEncoder(&json_data).Encode(tc.payload)
 
 			req := httptest.NewRequest(http.MethodPost, "/shorten", &json_data)
-			srv.PushLink().ServeHTTP(rr, req)
+			srv.PushURLHandler().ServeHTTP(rr, req)
 
 			assert.Equal(t, tc.expectedCode, rr.Code)
 		})
@@ -84,14 +84,14 @@ func Test_LinkFromShortUrl(t *testing.T) {
 		expectedCode int
 	}{
 		{
-			name:         "bad request",
+			name:         "invalid url",
 			path:         "/21321",
-			expectedCode: http.StatusBadRequest,
+			expectedCode: http.StatusNotFound,
 		},
 		{
-			name:         "invalid url",
+			name:         "invalid url 2",
 			path:         "/21321/eqwewqe",
-			expectedCode: http.StatusBadRequest,
+			expectedCode: http.StatusNotFound,
 		},
 	}
 
@@ -100,7 +100,7 @@ func Test_LinkFromShortUrl(t *testing.T) {
 			rr := httptest.NewRecorder()
 
 			req := httptest.NewRequest(http.MethodGet, tc.path, nil)
-			srv.LinkFromShortUrl().ServeHTTP(rr, req)
+			srv.GetShortURLHandler().ServeHTTP(rr, req)
 
 			assert.Equal(t, tc.expectedCode, rr.Code)
 		})
@@ -112,22 +112,19 @@ func Test_GetShortUrls(t *testing.T) {
 	srv := testServer(t, ctx)
 	fillTestDB(t, srv)
 
-	fmt.Println(URLsTestCases)
-
 	for _, tc := range URLsTestCases {
 		t.Run(tc.name, func(t *testing.T) {
 			rr := httptest.NewRecorder()
 
 			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/%s", tc.urls.Short), nil)
-			srv.LinkFromShortUrl().ServeHTTP(rr, req)
+			srv.GetShortURLHandler().ServeHTTP(rr, req)
 
 			assert.Equal(t, tc.expectedCode, rr.Code)
 
-			var urls model.URLs 
+			var urls model.URLs
 			if err := json.NewDecoder(rr.Body).Decode(&urls); err != nil {
 				t.Fatal(err)
 			}
-			
 
 			assert.Equal(t, tc.urls.Long, urls.Long)
 		})

@@ -50,7 +50,7 @@ func fillTestDB(t *testing.T, srv *apiserver.APIServer) {
 		_ = json.NewEncoder(&json_data).Encode(tc.urls)
 
 		req := httptest.NewRequest(http.MethodPost, "/shorten", &json_data)
-		srv.PushLink().ServeHTTP(rr, req)
+		srv.PushURLHandler().ServeHTTP(rr, req)
 
 		var urls model.URLs 
 		if err := json.NewDecoder(rr.Body).Decode(&urls); err != nil {
